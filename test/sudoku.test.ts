@@ -3,22 +3,9 @@
  * Tests the core sudoku.js library directly — no TypeScript wrapper involved.
  */
 
-// ---------------------------------------------------------------------------
-// Full interface for the sudoku.js library object
-// ---------------------------------------------------------------------------
-interface Sudoku {
-  // Public API
-  DIGITS: string;
-  BLANK_CHAR: string;
-  BLANK_BOARD: string;
-  generate(difficulty: string | number, unique?: boolean): string;
-  solve(board: string, reverse?: boolean): string | false;
-  get_candidates(board: string): string[][] | false;
-  board_string_to_grid(boardString: string): string[][];
-  board_grid_to_string(boardGrid: string[][]): string;
-  print_board(board: string | string[][]): void;
-  validate_board(board: string): true | string;
-  // Private / internal
+import type { SudokuLib } from "../src/types";
+
+interface SudokuInternal extends SudokuLib {
   _get_candidates_map(board: string): Record<string, string>;
   _get_square_vals_map(board: string): Record<string, string>;
   _cross(a: string | string[], b: string | number[]): string[];
@@ -35,7 +22,7 @@ interface Sudoku {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const sudoku: Sudoku = require("../sudoku.js").sudoku;
+const sudoku: SudokuInternal = require("../sudoku.js").sudoku;
 
 const {
   generate,
