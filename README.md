@@ -12,6 +12,120 @@ Implementation ideas borrowed from
 
 [demo]:http://htmlpreview.github.io/?https://github.com/robatron/sudoku.js/blob/master/demo/index.html
 
+TypeScript API (`@starxmaker/sudoku.js`)
+--------------------------------------------------------------------------------
+
+A typed TypeScript wrapper is available as `@starxmaker/sudoku.js`. It exposes
+a clean `number[][]`-based API instead of the raw dot-string format.
+
+### Installation
+
+```sh
+npm install @starxmaker/sudoku.js
+```
+
+### Types
+
+```ts
+type Difficulty = "easy" | "medium" | "hard" | "very-hard" | "insane" | "inhuman";
+
+// 9×9 grid — 1–9 for givens, 0 for empty
+type Board = number[][];
+
+// 9×9 grid — each cell is an array of candidate digits (e.g. [1, 4, 8])
+// Empty array ([]) means no candidates remain (contradiction)
+type CandidatesGrid = number[][][];
+
+interface ValidationOutput {
+  valid: boolean;
+  message?: string; // only present when valid is false
+}
+```
+
+### `generate(difficulty, unique?): Promise<Board>`
+
+Generate a new puzzle. Async because `insane`/`inhuman` difficulties can take
+seconds due to recursive uniqueness checking.
+
+```ts
+import { generate } from "@starxmaker/sudoku.js";
+
+const puzzle = await generate("easy");    // [[5, 0, 0, 1, 9, ...], ...]
+const custom = await generate(30, false); // 30 givens, may have many solutions
+```
+
+Difficulty → number of givens:
+
+| Difficulty  | Givens | Approx. time |
+|-------------|--------|--------------|
+| `easy`      | 62     | ~15ms        |
+| `medium`    | 53     | ~50ms        |
+| `hard`      | 44     | ~100ms       |
+| `very-hard` | 35     | ~170ms       |
+| `insane`    | 26     | seconds      |
+| `inhuman`   | 17     | minutes      |
+
+### `solve(board, reverse?): Board | null`
+
+Solve a puzzle. Returns `null` if no solution exists.
+
+```ts
+import { generate, solve } from "@starxmaker/sudoku.js";
+
+const solution = solve(await generate("hard"));
+if (solution === null) console.error("Unsolvable!");
+else console.log(solution[0]); // e.g. [5, 2, 7, 3, 1, 6, 4, 8, 9]
+```
+
+### `get_candidates(board): CandidatesGrid | null`
+
+Compute remaining candidate digits for every cell via constraint propagation.
+Returns `null` if the board contains a contradiction.
+
+```ts
+import { generate, get_candidates } from "@starxmaker/sudoku.js";
+
+const candidates = get_candidates(await generate("easy"));
+if (candidates === null) console.error("Contradiction!");
+// candidates[0][0] might be [4] (forced) or [1, 4, 8] (multiple options)
+```
+
+### `validate_board(board): ValidationOutput`
+
+Validate that the board is well-formed (81 cells, digits 0–9). Does **not**
+check for game-logic contradictions.
+
+```ts
+const { valid, message } = validate_board(puzzle);
+if (!valid) throw new Error(message);
+```
+
+### `print_board(board): void`
+
+Pretty-print a `Board` or `CandidatesGrid` to `console.log`.
+
+```ts
+import { generate, print_board } from "@starxmaker/sudoku.js";
+
+print_board(await generate("easy"));
+// 5 2 .   . . 6   . . .
+// ...
+```
+
+### `BLANK_BOARD`
+
+A 9×9 `Board` of zeros representing a fully blank board.
+
+```ts
+import { BLANK_BOARD } from "@starxmaker/sudoku.js";
+// [[0,0,0,0,0,0,0,0,0], ...]
+```
+
+---
+
+Original Documentation
+--------------------------------------------------------------------------------
+
 Intro
 --------------------------------------------------------------------------------
 
