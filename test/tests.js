@@ -1,5 +1,9 @@
 /* Unit tests for sudoku.js
-*/
+ * Compatible with QUnit 2.x (CLI via `npm run test:qunit`) and browser.
+ */
+
+// In Node.js (CLI), load sudoku via require. In the browser it is already a global.
+var sudoku = typeof window !== "undefined" ? window.sudoku : require("../sudoku.js").sudoku;
 
 // 95 "difficult" puzzles from http://magictour.free.fr/top95
 var TEST_PUZZLES = [
@@ -103,9 +107,9 @@ var TEST_PUZZLES = [
 
 // Solve
 // =====
-module('Solve');
+QUnit.module('Solve');
 
-test("Solve", function(){
+QUnit.test("Solve", function(assert){
     var puz1 = [
         "52...6.........7.13...........4..8..6......5...........418.........3."+
         ".2...87.....",
@@ -137,27 +141,27 @@ test("Solve", function(){
         "....3.8..!.9";
     
     // Solve some hard puzzles with known answers
-    ok(sudoku.solve(puz1[0]) === puz1[1], puz1[0] + " -> " + puz1[1]);
-    ok(sudoku.solve(puz2[0]) === puz2[1], puz2[0] + " -> " + puz2[1]);
-    ok(sudoku.solve(puz3[0]) === puz3[1], puz3[0] + " -> " + puz3[1]);
+    assert.ok(sudoku.solve(puz1[0]) === puz1[1], puz1[0] + " -> " + puz1[1]);
+    assert.ok(sudoku.solve(puz2[0]) === puz2[1], puz2[0] + " -> " + puz2[1]);
+    assert.ok(sudoku.solve(puz3[0]) === puz3[1], puz3[0] + " -> " + puz3[1]);
     
     // Solve all 95 difficult puzzles from above without any errors
     for(var i in TEST_PUZZLES){
-        ok(sudoku.solve(TEST_PUZZLES[i]));
+        assert.ok(sudoku.solve(TEST_PUZZLES[i]));
     }
     
     // Try to solve unsolvable puzzles
-    ok(!sudoku.solve(puz_unsolvable), "Unsolvable");
-    ok(!sudoku.solve(puz_unsolvable2), "Unsolvable 2");
+    assert.ok(!sudoku.solve(puz_unsolvable), "Unsolvable");
+    assert.ok(!sudoku.solve(puz_unsolvable2), "Unsolvable 2");
     
     // Board too big
-    throws(function(){sudoku.solve(puz_too_big)}, "Invalid board size");
+    assert.throws(function(){sudoku.solve(puz_too_big)}, "Invalid board size");
     
     // Board has invalid character
-    throws(function(){sudoku.solve(puz_invalid_chars)}, "Invalid characters");
+    assert.throws(function(){sudoku.solve(puz_invalid_chars)}, "Invalid characters");
 });
 
-test("Get candidates map", function(){
+QUnit.test("Get candidates map", function(assert){
     var puz = 
         "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.."+
         "...1.4......";
@@ -189,19 +193,19 @@ test("Get candidates map", function(){
         "....3.8..!.9";
     
     // Get candidates for puzzle
-    deepEqual(sudoku._get_candidates_map(puz), puz_candidates, puz);
+    assert.deepEqual(sudoku._get_candidates_map(puz), puz_candidates, puz);
     
     // Board too big
-    throws(function(){sudoku._get_candidates_map(puz_too_big)}, 
+    assert.throws(function(){sudoku._get_candidates_map(puz_too_big)}, 
             "Invalid board size");
     
     // Board has invalid character
-    throws(function(){sudoku._get_candidates_map(puz_invalid_chars)}, 
+    assert.throws(function(){sudoku._get_candidates_map(puz_invalid_chars)}, 
             "Invalid characters");
 });
 
-test("Get candidates", function(){
-    deepEqual(
+QUnit.test("Get candidates", function(assert){  
+    assert.deepEqual(
         sudoku.get_candidates(
             "4.25..389....4.265..523.147..1652.7.6..1945322543876915....3.1....4..9.....8....3"
         ),[
@@ -220,14 +224,14 @@ test("Get candidates", function(){
 // Square relationships
 // ====================
 
-module("Square relationships");
+QUnit.module("Square relationships");
 
-test("Get square -> vals map", function(){
+QUnit.test("Get square -> vals map", function(assert){
     var puz = 
         "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.."+
         "...1.4......";
         
-    deepEqual(sudoku._get_square_vals_map(puz), {
+    assert.deepEqual(sudoku._get_square_vals_map(puz), {
         "A1": "4", "A2": ".", "A3": ".", "A4": ".", "A5": ".", "A6": ".", 
         "A7": "8", "A8": ".", "A9": "5", "B1": ".", "B2": "3", "B3": ".", 
         "B4": ".", "B5": ".", "B6": ".", "B7": ".", "B8": ".", "B9": ".", 
@@ -244,11 +248,11 @@ test("Get square -> vals map", function(){
         "I7": ".", "I8": ".", "I9": "."
     }, "Testing with medium puzzle");
     
-    throws(function(){sudoku._get_square_vals_map("")}, 
+    assert.throws(function(){sudoku._get_square_vals_map("")}, 
             "Size squares/puzzle size mismatch")
 });
 
-test("Get square -> units map", function(){
+QUnit.test("Get square -> units map", function(assert){
     var rows = "ABCDEFGHI";
     var cols = "123456789";
     var squares = sudoku._cross(rows, cols);
@@ -256,21 +260,21 @@ test("Get square -> units map", function(){
     var square_units_map = sudoku._get_square_units_map(squares, units);
 
     // Check units for A1
-    deepEqual(square_units_map["A1"], [
+    assert.deepEqual(square_units_map["A1"], [
         ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9"],
         ["A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1", "I1"],
         ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"]
     ], "Units for A1");
 
     // Check units for E5
-    deepEqual(square_units_map["E5"], [
+    assert.deepEqual(square_units_map["E5"], [
         ["E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9"],
         ["A5", "B5", "C5", "D5", "E5", "F5", "G5", "H5", "I5"],
         ["D4", "D5", "D6", "E4", "E5", "E6", "F4", "F5", "F6"]
     ], "Units for E5");
 });
 
-test("Get square -> peers map", function(){
+QUnit.test("Get square -> peers map", function(assert){
     var rows = "ABCDEFGHI";
     var cols = "123456789";
     var squares = sudoku._cross(rows, cols);
@@ -280,38 +284,38 @@ test("Get square -> peers map", function(){
             square_units_map);
             
     // Check peers for A1
-    deepEqual(square_peers_map["A1"], [
+    assert.deepEqual(square_peers_map["A1"], [
         "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "B1", "C1", "D1", "E1", 
         "F1", "G1", "H1", "I1", "B2", "B3", "C2", "C3"],
     "Peers for A1");
     
     // Check peers for C2
-    deepEqual(square_peers_map["C2"], [
+    assert.deepEqual(square_peers_map["C2"], [
         "C1", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "A2", "B2", "D2", "E2", 
         "F2", "G2", "H2", "I2", "A1", "A3", "B1", "B3"],
     "Peers for C2"); 
 });
 
-test("Get all units", function(){
+QUnit.test("Get all units", function(assert){
     var rows = "ABCDEFGHI";
     var cols = "123456789";
     var all_units = sudoku._get_all_units(rows, cols);
 
     // Make sure we have exactly 27 units (9 rows + 9 columns + 9 boxes)
-    equal(all_units.length, 27, "27 units");
+    assert.equal(all_units.length, 27, "27 units");
 
     // Look for the first row unit
-    deepEqual(all_units[0],
+    assert.deepEqual(all_units[0],
         ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9"],
         "First row unit")
 
     // Look for the first col unit
-    deepEqual(all_units[9],
+    assert.deepEqual(all_units[9],
         ["A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1", "I1"],
         "First col unit")
 
     // Look for the first box unit
-    deepEqual(all_units[18],
+    assert.deepEqual(all_units[18],
         ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"],
         "First box unit")
 });
@@ -319,14 +323,14 @@ test("Get all units", function(){
 
 // Conversions
 // ===========
-module("Conversions");
+QUnit.module("Conversions");
 
-test("Board string -> grid", function(){
+QUnit.test("Board string -> grid", function(assert){
     var board1 = ".5.1972.8.9.2651.7217483596.4.3..7.9.3.7.98...796..32.981536472325974681764812953";
     var board2 = ".1.872.4..47695....651437..4217.8.3..7.2.4...58.9.12746583294171924873..734516...";
     var board3 = "23.94.67.8..3259149..76.32.1.....7925.321.4864..68.5317..1....96598721433...9...7";
     
-    deepEqual(sudoku.board_string_to_grid(board1), [
+    assert.deepEqual(sudoku.board_string_to_grid(board1), [
         [".","5",".","1","9","7","2",".","8"],
         [".","9",".","2","6","5","1",".","7"],
         ["2","1","7","4","8","3","5","9","6"],
@@ -337,7 +341,7 @@ test("Board string -> grid", function(){
         ["3","2","5","9","7","4","6","8","1"],
         ["7","6","4","8","1","2","9","5","3"]
     ]);
-    deepEqual(sudoku.board_string_to_grid(board2), [
+    assert.deepEqual(sudoku.board_string_to_grid(board2), [
         [".","1",".","8","7","2",".","4","."],
         [".","4","7","6","9","5",".",".","."],
         [".","6","5","1","4","3","7",".","."],
@@ -348,7 +352,7 @@ test("Board string -> grid", function(){
         ["1","9","2","4","8","7","3",".","."],
         ["7","3","4","5","1","6",".",".","."]
     ]);
-    deepEqual(sudoku.board_string_to_grid(board3), [
+    assert.deepEqual(sudoku.board_string_to_grid(board3), [
         ["2","3",".","9","4",".","6","7","."],
         ["8",".",".","3","2","5","9","1","4"],
         ["9",".",".","7","6",".","3","2","."],
@@ -361,7 +365,7 @@ test("Board string -> grid", function(){
     ]);
 });
 
-test("Board grid -> string", function(){
+QUnit.test("Board grid -> string", function(assert){
     var grid1 = [
         [".","5",".","1","9","7","2",".","8"],
         [".","9",".","2","6","5","1",".","7"],
@@ -396,33 +400,33 @@ test("Board grid -> string", function(){
         ["3",".",".",".","9",".",".",".","7"]
     ];
     
-    deepEqual(sudoku.board_grid_to_string(grid1), 
+    assert.deepEqual(sudoku.board_grid_to_string(grid1), 
         ".5.1972.8.9.2651.7217483596.4.3..7.9.3.7.98...796..32.981536472325974681764812953"
     );
-    deepEqual(sudoku.board_grid_to_string(grid2), 
+    assert.deepEqual(sudoku.board_grid_to_string(grid2), 
         ".1.872.4..47695....651437..4217.8.3..7.2.4...58.9.12746583294171924873..734516..."
     );
-    deepEqual(sudoku.board_grid_to_string(grid3), 
+    assert.deepEqual(sudoku.board_grid_to_string(grid3), 
         "23.94.67.8..3259149..76.32.1.....7925.321.4864..68.5317..1....96598721433...9...7"
     );
 });
 
-test("Integration", function(){
+QUnit.test("Integration", function(assert){
     for(var i = 0; i < 10; ++i){
         var board = sudoku.generate();
         var board_grid = sudoku.board_string_to_grid(board);
         var board_string = sudoku.board_grid_to_string(board_grid);
         
-        ok(board === board_string);
+        assert.ok(board === board_string);
     }
 });
 
 
 // Utility
 // =======
-module("Utility");
+QUnit.module("Utility");
 
-test("Validate board", function(){
+QUnit.test("Validate board", function(assert){
    var report_empty             = sudoku.validate_board();
    var report_invalid_size      = sudoku.validate_board("123");
    var report_invalid_char      = sudoku.validate_board(
@@ -432,55 +436,55 @@ test("Validate board", function(){
         ".3.9564272..784136764231589327149658.4.56..73..637..14412893765.8.627"+
         "341673415892");
    
-   ok(report_empty !== true);
-   ok(report_invalid_size !== true);
-   ok(report_invalid_char !== true);
-   ok(report_good);
+   assert.ok(report_empty !== true);
+   assert.ok(report_invalid_size !== true);
+   assert.ok(report_invalid_char !== true);
+   assert.ok(report_good);
 });
 
-test("Cross product", function(){
+QUnit.test("Cross product", function(assert){
 
     // Simple case
-    deepEqual(sudoku._cross('a','1'), ["a1"], "Simple case");
+    assert.deepEqual(sudoku._cross('a','1'), ["a1"], "Simple case");
 
     // Classic case
-    deepEqual(
+    assert.deepEqual(
         sudoku._cross("abc", "123"),
         ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "c3"],
         "Classic case"
     );
 
     // Empty case
-    deepEqual(sudoku._cross('',''), [], "Empty case");
+    assert.deepEqual(sudoku._cross('',''), [], "Empty case");
 
     // Classic case with arrays
-    deepEqual(
+    assert.deepEqual(
         sudoku._cross(['a', 'b', 'c'], [1, 2, 3]),
         ["a1", "a2", "a3", "b1", "b2", "b3", "c1", "c2", "c3"],
         "Classic case with arrays"
     );
 
     // Mismatched size
-    deepEqual(
+    assert.deepEqual(
         sudoku._cross(['a', 'b', 'c'], [1, 2]),
         ["a1", "a2", "b1", "b2", "c1", "c2"],
         "Mismatched size"
     );
 
     // Empty default
-    deepEqual(sudoku._cross(), [], "Empty arrays");
+    assert.deepEqual(sudoku._cross(), [], "Empty arrays");
 });
 
-test("_in", function(){
+QUnit.test("_in", function(assert){
     var seq = [1, 2, 3];
     var seq_string = "abc";
     
     // Normal
-    ok(sudoku._in(1, seq), "Normal use case");
-    ok(!sudoku._in(0, seq), "Normal use case (not)");
+    assert.ok(sudoku._in(1, seq), "Normal use case");
+    assert.ok(!sudoku._in(0, seq), "Normal use case (not)");
     
     // String
-    ok(sudoku._in('a', seq_string), "String");
-    ok(!sudoku._in('z', seq_string), "String (not)");
+    assert.ok(sudoku._in('a', seq_string), "String");
+    assert.ok(!sudoku._in('z', seq_string), "String (not)");
 });
 
