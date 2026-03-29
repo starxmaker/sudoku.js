@@ -108,6 +108,23 @@ describe("generate", () => {
     const b = await generate("easy");
     expect(a).not.toEqual(b);
   });
+
+  test("generate yields to the event loop during retries", async () => {
+    // Schedule a counter that increments every time the event loop is free.
+    // A truly synchronous generate would block the loop entirely, keeping
+    // tickCount at 0 until after the call returns.  A generate that awaits
+    // between retries lets the interval fire mid-run, so tickCount > 0.
+    let tickCount = 0;
+    const interval = setInterval(() => { tickCount++; }, 0);
+    try {
+      // 30 givens needs many retries in practice (~1-2 s), which is enough to
+      // prove yielding without the multi-minute runtime of "insane"/"inhuman".
+      await generate(30);
+    } finally {
+      clearInterval(interval);
+    }
+    expect(tickCount).toBeGreaterThan(0);
+  }, 30_000);
 });
 
 // ---------------------------------------------------------------------------

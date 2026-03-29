@@ -411,9 +411,9 @@ QUnit.test("Board grid -> string", function(assert){
     );
 });
 
-QUnit.test("Integration", function(assert){
+QUnit.test("Integration", async function(assert){
     for(var i = 0; i < 10; ++i){
-        var board = sudoku.generate();
+        var board = await sudoku.generate();
         var board_grid = sudoku.board_string_to_grid(board);
         var board_string = sudoku.board_grid_to_string(board_grid);
         
