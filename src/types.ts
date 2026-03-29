@@ -1,20 +1,4 @@
 // ---------------------------------------------------------------------------
-// Internal interface matching the sudoku.js runtime object
-// ---------------------------------------------------------------------------
-export interface SudokuLib {
-  DIGITS: string;
-  BLANK_CHAR: string;
-  BLANK_BOARD: string;
-  generate(difficulty: Difficulty | number, unique?: boolean): string;
-  solve(board: string, reverse?: boolean): string | false;
-  get_candidates(board: string): string[][] | false;
-  board_string_to_grid(boardString: string): string[][];
-  board_grid_to_string(boardGrid: string[][]): string;
-  print_board(board: string | string[][]): void;
-  validate_board(board: string): true | string;
-}
-
-// ---------------------------------------------------------------------------
 // Public types
 // ---------------------------------------------------------------------------
 
@@ -36,20 +20,24 @@ export type Difficulty =
   | "inhuman";
 
 /**
- * An 81-character string representing a Sudoku board read left-to-right,
- * top-to-bottom. Each character is either a digit `'1'`–`'9'` or `'.'` for
- * an empty square.
+ * A 9×9 grid representing a Sudoku board. Each inner array is a row;
+ * each cell holds `1`–`9` for a given digit or `0` for an empty square.
  */
-export type BoardString = string;
+export type Board = number[][];
 
 /**
- * A 9×9 two-dimensional array representation of a Sudoku board. Each cell
- * holds a single-character string: `'1'`–`'9'` or `'.'` for empty.
+ * A 9×9 three-dimensional array where each cell holds the digits still possible
+ * in that position (e.g. `[1, 3, 5]`, `[9]`, `[1, 2, 3, 4, 5, 6, 7, 8, 9]`).
+ * An empty inner array (`[]`) means no candidates remain (contradiction).
  */
-export type BoardGrid = string[][];
+export type CandidatesGrid = number[][][];
 
 /**
- * A 9×9 two-dimensional array where each cell holds a string of the digits
- * still possible in that position (e.g. `"135"`, `"9"`, `"123456789"`).
+ * The result of {@link validate_board}.
+ * - `valid: true` — the board is well-formed; `message` is absent.
+ * - `valid: false` — the board is invalid; `message` describes the problem.
  */
-export type CandidatesGrid = string[][];
+export interface ValidationOutput {
+  valid: boolean;
+  message?: string;
+}
