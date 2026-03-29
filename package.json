@@ -1,6 +1,6 @@
 {
   "name": "@starxmaker/sudoku.js",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A Sudoku puzzle generator and solver — TypeScript wrapper with CJS, ESM, and browser builds.",
   "author": {
     "name": "robatron",

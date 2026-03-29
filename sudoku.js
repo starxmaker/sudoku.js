@@ -25,11 +25,11 @@
     // Define difficulties by how many squares are given to the player in a new
     // puzzle.
     var DIFFICULTY = {
-        "easy":         62,
-        "medium":       53,
-        "hard":         44,
-        "very-hard":    35,
-        "insane":       26,
+        "easy":         61,
+        "medium":       52,
+        "hard":         43,
+        "very-hard":    34,
+        "insane":       25,
         "inhuman":      17,
     };
 
@@ -81,6 +81,13 @@
         
         
         By default, the puzzles are unique, unless you set `unique` to false.
+        
+        
+        Uses a top-down "dig-down" strategy: generate a complete random solution
+        first, then remove squares one-by-one (checking uniqueness after each
+        removal) until the target number of givens is reached.  This is orders
+        of magnitude faster than the previous bottom-up retry approach for
+        difficult puzzles, and the async yields keep the event loop responsive.
         */
         
         // If `difficulty` is a string or undefined, convert it to a number or
@@ -97,89 +104,156 @@
         if(typeof unique === "undefined"){
             unique = true;
         }
+
+        return sudoku._generate_dig_down(difficulty, unique);
+    };
+
+    sudoku._generate_dig_down = async function(difficulty, unique){
+        /* Top-down "dig-down" generator.
         
-        // Retry loop — yields to the event loop between each failed attempt so
-        // long-running generations (e.g. "insane"/"inhuman") don't block the UI.
+        Algorithm:
+          1. Generate a complete random solution (fast, milliseconds).
+          2. Shuffle all 81 squares and try removing each one while the puzzle
+             remains (uniquely) solvable.
+          3. After one pass, re-shuffle and repeat.  Different orderings unlock
+             different removal sequences, so multiple passes escape local minima.
+          4. If after MAX_PASSES we haven't reached the target, discard this
+             solution and generate a new one.
+        
+        Passes run fully synchronously (no inner yields) so we maximise CPU
+        throughput per solution attempt.  We yield to the event loop only between
+        complete solution attempts, keeping the UI responsive without the ~1ms
+        minimum-latency overhead of setTimeout on every inner iteration.
+        
+        Number of passes scales with difficulty: low-givens puzzles need more
+        passes because fewer removal orderings work and good starting solutions
+        are rarer.
+        */
+        var attemptCount = 0;
+        // More passes for harder difficulties — reaching 17-25 clues requires
+        // trying many different removal orderings on the same solution.
+        var MAX_PASSES = difficulty >= 35 ? 5
+                       : difficulty >= 26 ? 15
+                       : difficulty >= 20 ? 80
+                       : 150;
+
+        // Yield once immediately so callers always get a genuine Promise turn
+        // and any same-tick microtasks (e.g. UI updates) can run first.
+        await new Promise(function(resolve){ setTimeout(resolve, 0); });
+
         while(true){
-            // Get a set of squares and all possible candidates for each square
-            var blank_board = "";
-            for(var i = 0; i < NR_SQUARES; ++i){
-                blank_board += '.';
+            var solution = sudoku._generate_solution();
+            if(!solution){
+                await new Promise(function(resolve){ setTimeout(resolve, 0); });
+                continue;
             }
-            var candidates = sudoku._get_candidates_map(blank_board);
-            
-            // For each item in a shuffled list of squares
-            var shuffled_squares = sudoku._shuffle(SQUARES);
-            for(var si in shuffled_squares){
-                var square = shuffled_squares[si];
-                
-                // If an assignment of a random chioce causes a contradictoin, give
-                // up and try again
-                var rand_candidate_idx = 
-                        sudoku._rand_range(candidates[square].length);
-                var rand_candidate = candidates[square][rand_candidate_idx];
-                if(!sudoku._assign(candidates, square, rand_candidate)){
-                    break;
-                }
-                
-                // Make a list of all single candidates
-                var single_candidates = [];
-                for(var si in SQUARES){
-                    var square = SQUARES[si];
-                    
-                    if(candidates[square].length == 1){
-                        single_candidates.push(candidates[square]);
+
+            var board = solution;
+            var nr_givens = NR_SQUARES;
+
+            for(var pass = 0; pass < MAX_PASSES && nr_givens > difficulty; ++pass){
+                var prev_givens = nr_givens;
+                var squares_to_try = sudoku._shuffle(SQUARES.slice());
+
+                for(var ii = 0; ii < squares_to_try.length; ++ii){
+                    if(nr_givens <= difficulty){ break; }
+
+                    var sq  = squares_to_try[ii];
+                    var idx = SQUARES.indexOf(sq);
+
+                    if(board[idx] === sudoku.BLANK_CHAR){ continue; }
+
+                    var candidate_board = board.substr(0, idx) + sudoku.BLANK_CHAR +
+                            board.substr(idx + 1);
+
+                    var valid = false;
+                    try {
+                        var sol1 = sudoku.solve(candidate_board);
+                        if(sol1){
+                            if(!unique){
+                                valid = true;
+                            } else {
+                                var sol2 = sudoku.solve(candidate_board, true);
+                                valid = (sol2 === sol1);
+                            }
+                        }
+                    } catch(e){}
+
+                    if(valid){
+                        board = candidate_board;
+                        --nr_givens;
                     }
                 }
-                
-                // If we have at least difficulty, and the unique candidate count is
-                // at least 8, return the puzzle!
-                if(single_candidates.length >= difficulty && 
-                        sudoku._strip_dups(single_candidates).length >= 8){
-                    var board = "";
-                    var givens_idxs = [];
-                    for(var i in SQUARES){
-                        var square = SQUARES[i];
-                        if(candidates[square].length == 1){
-                            board += candidates[square];
-                            givens_idxs.push(i);
-                        } else {
-                            board += sudoku.BLANK_CHAR;
-                        }
-                    }
-                    
-                    // If we have more than `difficulty` givens, remove some random
-                    // givens until we're down to exactly `difficulty`
-                    var nr_givens = givens_idxs.length;
-                    if(nr_givens > difficulty){
-                        givens_idxs = sudoku._shuffle(givens_idxs);
-                        for(var i = 0; i < nr_givens - difficulty; ++i){
-                            var target = parseInt(givens_idxs[i]);
-                            board = board.substr(0, target) + sudoku.BLANK_CHAR + 
-                                board.substr(target + 1);
-                        }
-                    }
-                    
-                    // Double check board is solvable
-                    // TODO: Make a standalone board checker. Solve is expensive.
-                    const solution = sudoku.solve(board);
-                    if(solution){
-                        if(!unique){
-                            return board;
-                        }
-                        // Check if "backwards" solution is equal to regular solution.
-                        // If it is, the sudoku has a unique solution.
-                        const reverseSolution = sudoku.solve(board, true);
-                        if(reverseSolution === solution){
-                            return board;
-                        }
-                    }
-                }
+
+                // No progress this pass — further passes on this solution
+                // won't help since no single removal is currently valid.
+                if(nr_givens === prev_givens){ break; }
             }
-            
-            // This attempt failed — yield to the event loop before retrying
-            await new Promise(function(resolve){ setTimeout(resolve, 0); });
+
+            if(nr_givens === difficulty){ return board; }
+
+            // Yield between solution attempts (not inside passes) so we pay
+            // the setTimeout cost at most once per solution, not thousands of
+            // times per inner loop.
+            if(++attemptCount % 5 === 0){
+                await new Promise(function(resolve){ setTimeout(resolve, 0); });
+            }
         }
+    };
+
+    // Generation helpers
+    // -------------------------------------------------------------------------
+
+    sudoku._generate_solution = function(){
+        /* Return a string representing a complete, randomly-filled valid Sudoku
+        board, or false if backtracking fails (should never happen in practice).
+        */
+        var candidates = {};
+        for(var si in SQUARES){
+            candidates[SQUARES[si]] = sudoku.DIGITS;
+        }
+        var result = sudoku._search_random(candidates);
+        if(!result){ return false; }
+        var solution = "";
+        for(var si in SQUARES){
+            solution += result[SQUARES[si]];
+        }
+        return solution;
+    };
+
+    sudoku._search_random = function(candidates){
+        /* Depth-first search like `_search`, but tries candidate values in a
+        random order so that every call produces a different complete solution.
+        Used exclusively by `_generate_solution`.
+        */
+        if(!candidates){ return false; }
+
+        // Find the unfilled square with the fewest remaining candidates (MRV).
+        var min_nr = 10;
+        var min_square = null;
+        for(var si in SQUARES){
+            var sq = SQUARES[si];
+            var n  = candidates[sq].length;
+            if(n === 0){ return false; }
+            if(n > 1 && n < min_nr){
+                min_nr = n;
+                min_square = sq;
+            }
+        }
+
+        // Every square has exactly one candidate — the board is fully solved.
+        if(min_square === null){ return candidates; }
+
+        // Shuffle the candidates for this square and try each in turn.
+        var vals = sudoku._shuffle(candidates[min_square].split(""));
+        for(var i = 0; i < vals.length; ++i){
+            var candidates_copy = JSON.parse(JSON.stringify(candidates));
+            var result = sudoku._search_random(
+                sudoku._assign(candidates_copy, min_square, vals[i])
+            );
+            if(result){ return result; }
+        }
+        return false;
     };
 
     // Solve

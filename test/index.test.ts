@@ -88,10 +88,30 @@ describe("generate", () => {
     expect(givens).toBe(30);
   }, 120_000);
 
-  test("easy puzzle has exactly 62 givens", async () => {
+  describe("23 givens — performance and correctness", () => {
+    const RUNS = 5;
+    const TIME_LIMIT_MS = 10_000;
+
+    test.each(Array.from({ length: RUNS }, (_, i) => [i + 1]))(
+      "run %i: generates with exactly 23 givens in < 10 s",
+      async (run) => {
+        const start = Date.now();
+        const board = await generate(23);
+        const elapsed = Date.now() - start;
+        const givens = board.flat().filter((n) => n !== 0).length;
+
+        expect(isBoard(board)).toBe(true);
+        expect(givens).toBe(23);
+        expect(elapsed).toBeLessThan(TIME_LIMIT_MS);
+      },
+      TIME_LIMIT_MS + 1000  // jest timeout slightly above the limit
+    );
+  });
+
+  test("easy puzzle has exactly 61 givens", async () => {
     const board = await generate("easy");
     const givens = board.flat().filter((n) => n !== 0).length;
-    expect(givens).toBe(62);
+    expect(givens).toBe(61);
   });
 
   test("all cells are integers 0–9", async () => {
