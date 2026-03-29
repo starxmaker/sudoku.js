@@ -2,12 +2,15 @@
   "name": "@starxmaker/sudoku.js",
   "version": "1.0.0",
   "description": "A Sudoku puzzle generator and solver — TypeScript wrapper with CJS, ESM, and browser builds.",
-  "author": "starxmaker",
+  "author": {
+    "name": "robatron",
+    "url": "https://github.com/robatron/sudoku.js"
+  },
   "contributors": [
-    {
-      "name": "robatron",
-      "url": "https://github.com/robatron/sudoku.js"
-    }
+    { "name": "Rob McGuire", "url": "https://github.com/robatron" },
+    { "name": "Lars Bonczek", "url": "https://github.com/larsbonczek" },
+    { "name": "Laurens", "url": "https://github.com/laurens-vrh" },
+    { "name": "starxmaker", "url": "https://github.com/starxmaker" }
   ],
   "license": "MIT",
   "main": "dist/index.js",
