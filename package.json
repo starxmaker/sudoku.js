@@ -26,13 +26,18 @@
   "scripts": {
     "build": "tsup",
     "test": "jest",
+    "test:qunit": "qunit test/tests.js",
     "prepublishOnly": "npm run build"
   },
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "testMatch": ["**/test/**/*.test.ts"],
-    "roots": ["<rootDir>/test"]
+    "testMatch": [
+      "**/test/**/*.test.ts"
+    ],
+    "roots": [
+      "<rootDir>/test"
+    ]
   },
   "publishConfig": {
     "access": "public"
@@ -48,6 +53,7 @@
     "@types/jest": "^29.0.0",
     "@types/node": "^25.5.0",
     "jest": "^29.0.0",
+    "qunit": "^2.25.0",
     "ts-jest": "^29.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
