@@ -72,21 +72,19 @@ export function solve(
  *
  * @param board - A 9×9 {@link Board}.
  * @returns A 9×9 {@link CandidatesGrid} where each cell is an array of still-
- *   possible digits. Returns an empty grid (all cells `[]`) if the board
- *   contains a contradiction.
+ *   possible digits, or `null` if the board contains a contradiction.
  *
  * @example
  * ```ts
  * import { generate, get_candidates } from "@starxmaker/sudoku.js";
- * const candidates = get_candidates(generate("easy"));
+ * const candidates = get_candidates(await generate("easy"));
+ * if (candidates === null) console.error("Contradiction!");
  * // candidates[0][0] might be [4] (forced) or [1, 4, 8] (multiple options)
  * ```
  */
-export function get_candidates(board: Board): CandidatesGrid {
+export function get_candidates(board: Board): CandidatesGrid | null {
   const result = _sudoku.get_candidates(boardToString(board));
-  if (result === false) {
-    return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => []));
-  }
+  if (result === false) return null;
   return result.map((row) => row.map((cell) => cell.split("").map(Number)));
 }
 

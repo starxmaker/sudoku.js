@@ -148,9 +148,11 @@ describe("solve", () => {
 describe("get_candidates", () => {
   test("returns a 9×9 CandidatesGrid for a valid unsolved board", async () => {
     const { puzzle } = await getKnownPair();
-    const candidates: CandidatesGrid = get_candidates(puzzle);
-    expect(candidates.length).toBe(9);
-    candidates.forEach((row) => {
+    const candidates: CandidatesGrid | null = get_candidates(puzzle);
+    expect(candidates).not.toBeNull();
+    const grid = candidates as CandidatesGrid;
+    expect(grid.length).toBe(9);
+    grid.forEach((row) => {
       expect(row.length).toBe(9);
       row.forEach((cell) => expect(Array.isArray(cell)).toBe(true));
     });
@@ -158,7 +160,7 @@ describe("get_candidates", () => {
 
   test("pre-filled cells have a single-digit candidate array", async () => {
     const { puzzle } = await getKnownPair();
-    const candidates: CandidatesGrid = get_candidates(puzzle);
+    const candidates = get_candidates(puzzle) as CandidatesGrid;
     puzzle.forEach((row, r) => {
       row.forEach((cell, c) => {
         if (cell !== 0) {
@@ -170,20 +172,15 @@ describe("get_candidates", () => {
 
   test("candidate arrays contain only digits 1–9", async () => {
     const { puzzle } = await getKnownPair();
-    const candidates: CandidatesGrid = get_candidates(puzzle);
+    const candidates = get_candidates(puzzle) as CandidatesGrid;
     candidates.flat(2).forEach((digit) => {
       expect(digit).toBeGreaterThanOrEqual(1);
       expect(digit).toBeLessThanOrEqual(9);
     });
   });
 
-  test("returns empty grid for a contradictory board", () => {
-    const result: CandidatesGrid = get_candidates(UNSOLVABLE);
-    expect(result.length).toBe(9);
-    result.forEach((row) => {
-      expect(row.length).toBe(9);
-      row.forEach((cell) => expect(cell).toEqual([]));
-    });
+  test("returns null for a contradictory board", () => {
+    expect(get_candidates(UNSOLVABLE)).toBeNull();
   });
 });
 
