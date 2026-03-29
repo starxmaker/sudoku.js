@@ -1,0 +1,45 @@
+{
+  "name": "@starxmaker/sudoku.js",
+  "version": "1.0.0",
+  "description": "A Sudoku puzzle generator and solver — TypeScript wrapper with CJS, ESM, and browser builds.",
+  "author": "starxmaker",
+  "contributors": [
+    {
+      "name": "robatron",
+      "url": "https://github.com/robatron/sudoku.js"
+    }
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "sudoku",
+    "puzzle",
+    "generator",
+    "solver",
+    "typescript"
+  ],
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
