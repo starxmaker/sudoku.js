@@ -40,7 +40,7 @@ export async function generate(
   difficulty: Difficulty | number,
   unique?: boolean
 ): Promise<Board> {
-  return stringToBoard(_sudoku.generate(difficulty, unique));
+  return stringToBoard(await _sudoku.generate(difficulty, unique));
 }
 
 /**

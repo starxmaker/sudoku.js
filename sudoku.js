@@ -52,7 +52,7 @@
 
     // Generate
     // -------------------------------------------------------------------------
-    sudoku.generate = function(difficulty, unique){
+    sudoku.generate = async function(difficulty, unique){
         /* Generate a new Sudoku puzzle of a particular `difficulty`, e.g.,
         
             // Generate an "easy" sudoku puzzle
@@ -98,84 +98,88 @@
             unique = true;
         }
         
-        // Get a set of squares and all possible candidates for each square
-        var blank_board = "";
-        for(var i = 0; i < NR_SQUARES; ++i){
-            blank_board += '.';
-        }
-        var candidates = sudoku._get_candidates_map(blank_board);
-        
-        // For each item in a shuffled list of squares
-        var shuffled_squares = sudoku._shuffle(SQUARES);
-        for(var si in shuffled_squares){
-            var square = shuffled_squares[si];
-            
-            // If an assignment of a random chioce causes a contradictoin, give
-            // up and try again
-            var rand_candidate_idx = 
-                    sudoku._rand_range(candidates[square].length);
-            var rand_candidate = candidates[square][rand_candidate_idx];
-            if(!sudoku._assign(candidates, square, rand_candidate)){
-                break;
+        // Retry loop — yields to the event loop between each failed attempt so
+        // long-running generations (e.g. "insane"/"inhuman") don't block the UI.
+        while(true){
+            // Get a set of squares and all possible candidates for each square
+            var blank_board = "";
+            for(var i = 0; i < NR_SQUARES; ++i){
+                blank_board += '.';
             }
+            var candidates = sudoku._get_candidates_map(blank_board);
             
-            // Make a list of all single candidates
-            var single_candidates = [];
-            for(var si in SQUARES){
-                var square = SQUARES[si];
+            // For each item in a shuffled list of squares
+            var shuffled_squares = sudoku._shuffle(SQUARES);
+            for(var si in shuffled_squares){
+                var square = shuffled_squares[si];
                 
-                if(candidates[square].length == 1){
-                    single_candidates.push(candidates[square]);
+                // If an assignment of a random chioce causes a contradictoin, give
+                // up and try again
+                var rand_candidate_idx = 
+                        sudoku._rand_range(candidates[square].length);
+                var rand_candidate = candidates[square][rand_candidate_idx];
+                if(!sudoku._assign(candidates, square, rand_candidate)){
+                    break;
                 }
-            }
-            
-            // If we have at least difficulty, and the unique candidate count is
-            // at least 8, return the puzzle!
-            if(single_candidates.length >= difficulty && 
-                    sudoku._strip_dups(single_candidates).length >= 8){
-                var board = "";
-                var givens_idxs = [];
-                for(var i in SQUARES){
-                    var square = SQUARES[i];
+                
+                // Make a list of all single candidates
+                var single_candidates = [];
+                for(var si in SQUARES){
+                    var square = SQUARES[si];
+                    
                     if(candidates[square].length == 1){
-                        board += candidates[square];
-                        givens_idxs.push(i);
-                    } else {
-                        board += sudoku.BLANK_CHAR;
+                        single_candidates.push(candidates[square]);
                     }
                 }
                 
-                // If we have more than `difficulty` givens, remove some random
-                // givens until we're down to exactly `difficulty`
-                var nr_givens = givens_idxs.length;
-                if(nr_givens > difficulty){
-                    givens_idxs = sudoku._shuffle(givens_idxs);
-                    for(var i = 0; i < nr_givens - difficulty; ++i){
-                        var target = parseInt(givens_idxs[i]);
-                        board = board.substr(0, target) + sudoku.BLANK_CHAR + 
-                            board.substr(target + 1);
+                // If we have at least difficulty, and the unique candidate count is
+                // at least 8, return the puzzle!
+                if(single_candidates.length >= difficulty && 
+                        sudoku._strip_dups(single_candidates).length >= 8){
+                    var board = "";
+                    var givens_idxs = [];
+                    for(var i in SQUARES){
+                        var square = SQUARES[i];
+                        if(candidates[square].length == 1){
+                            board += candidates[square];
+                            givens_idxs.push(i);
+                        } else {
+                            board += sudoku.BLANK_CHAR;
+                        }
                     }
-                }
-                
-                // Double check board is solvable
-                // TODO: Make a standalone board checker. Solve is expensive.
-                const solution = sudoku.solve(board);
-                if(solution){
-                    if(!unique){
-                        return board;
+                    
+                    // If we have more than `difficulty` givens, remove some random
+                    // givens until we're down to exactly `difficulty`
+                    var nr_givens = givens_idxs.length;
+                    if(nr_givens > difficulty){
+                        givens_idxs = sudoku._shuffle(givens_idxs);
+                        for(var i = 0; i < nr_givens - difficulty; ++i){
+                            var target = parseInt(givens_idxs[i]);
+                            board = board.substr(0, target) + sudoku.BLANK_CHAR + 
+                                board.substr(target + 1);
+                        }
                     }
-                    // Check if "backwards" solution is equal to regular solution.
-                    // If it is, the sudoku has a unique solution.
-                    const reverseSolution = sudoku.solve(board, true);
-                    if(reverseSolution === solution){
-                        return board;
+                    
+                    // Double check board is solvable
+                    // TODO: Make a standalone board checker. Solve is expensive.
+                    const solution = sudoku.solve(board);
+                    if(solution){
+                        if(!unique){
+                            return board;
+                        }
+                        // Check if "backwards" solution is equal to regular solution.
+                        // If it is, the sudoku has a unique solution.
+                        const reverseSolution = sudoku.solve(board, true);
+                        if(reverseSolution === solution){
+                            return board;
+                        }
                     }
                 }
             }
+            
+            // This attempt failed — yield to the event loop before retrying
+            await new Promise(function(resolve){ setTimeout(resolve, 0); });
         }
-        
-        // Give up and try a new puzzle
-        return sudoku.generate(difficulty);
     };
 
     // Solve

@@ -13,7 +13,7 @@ export interface SudokuLib {
   BLANK_BOARD: string;
 
   // Core API
-  generate(difficulty: string | number, unique?: boolean): string;
+  generate(difficulty: string | number, unique?: boolean): Promise<string>;
   solve(board: string, reverse?: boolean): string | false;
   get_candidates(board: string): string[][] | false;
   board_string_to_grid(boardString: string): string[][];
