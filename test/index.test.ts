@@ -34,9 +34,9 @@ function isBoard(v: unknown): v is Board {
 let _cachedPuzzle: Board | null = null;
 let _cachedSolution: Board | null = null;
 
-function getKnownPair(): { puzzle: Board; solution: Board } {
+async function getKnownPair(): Promise<{ puzzle: Board; solution: Board }> {
   if (!_cachedPuzzle) {
-    _cachedPuzzle = generate("easy");
+    _cachedPuzzle = await generate("easy");
     _cachedSolution = solve(_cachedPuzzle) as Board;
   }
   return { puzzle: _cachedPuzzle!, solution: _cachedSolution as Board };
@@ -76,26 +76,26 @@ describe("generate", () => {
   // unique=true because uniqueness-checking at ≤26 givens is exponential.
   const FAST_DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "very-hard"];
 
-  test.each(FAST_DIFFICULTIES)('returns a valid 9×9 Board for difficulty "%s"', (d) => {
-    const board = generate(d);
+  test.each(FAST_DIFFICULTIES)('returns a valid 9×9 Board for difficulty "%s"', async (d) => {
+    const board = await generate(d);
     expect(isBoard(board)).toBe(true);
   });
 
-  test("returns a valid 9×9 Board for a numeric difficulty (30 givens)", () => {
-    const board = generate(30);
+  test("returns a valid 9×9 Board for a numeric difficulty (30 givens)", async () => {
+    const board = await generate(30);
     expect(isBoard(board)).toBe(true);
     const givens = board.flat().filter((n) => n !== 0).length;
     expect(givens).toBe(30);
   });
 
-  test("easy puzzle has exactly 62 givens", () => {
-    const board = generate("easy");
+  test("easy puzzle has exactly 62 givens", async () => {
+    const board = await generate("easy");
     const givens = board.flat().filter((n) => n !== 0).length;
     expect(givens).toBe(62);
   });
 
-  test("all cells are integers 0–9", () => {
-    const board = generate("easy");
+  test("all cells are integers 0–9", async () => {
+    const board = await generate("easy");
     board.flat().forEach((cell) => {
       expect(Number.isInteger(cell)).toBe(true);
       expect(cell).toBeGreaterThanOrEqual(0);
@@ -103,9 +103,9 @@ describe("generate", () => {
     });
   });
 
-  test("two consecutive puzzles are different", () => {
-    const a = generate("easy");
-    const b = generate("easy");
+  test("two consecutive puzzles are different", async () => {
+    const a = await generate("easy");
+    const b = await generate("easy");
     expect(a).not.toEqual(b);
   });
 });
@@ -115,8 +115,8 @@ describe("generate", () => {
 // ---------------------------------------------------------------------------
 
 describe("solve", () => {
-  test("returns a valid 9×9 Board", () => {
-    const { puzzle, solution } = getKnownPair();
+  test("returns a valid 9×9 Board", async () => {
+    const { puzzle, solution } = await getKnownPair();
     expect(isBoard(solution)).toBe(true);
     // Solution must equal the puzzle's givens wherever they were set
     puzzle.forEach((row, r) => {
@@ -126,13 +126,13 @@ describe("solve", () => {
     });
   });
 
-  test("solved board has no zeros", () => {
-    const { solution } = getKnownPair();
+  test("solved board has no zeros", async () => {
+    const { solution } = await getKnownPair();
     solution.flat().forEach((cell) => expect(cell).not.toBe(0));
   });
 
-  test("solve → re-solve is idempotent", () => {
-    const { solution } = getKnownPair();
+  test("solve → re-solve is idempotent", async () => {
+    const { solution } = await getKnownPair();
     expect(solve(solution)).toEqual(solution);
   });
 
@@ -146,8 +146,8 @@ describe("solve", () => {
 // ---------------------------------------------------------------------------
 
 describe("get_candidates", () => {
-  test("returns a 9×9 CandidatesGrid for a valid unsolved board", () => {
-    const { puzzle } = getKnownPair();
+  test("returns a 9×9 CandidatesGrid for a valid unsolved board", async () => {
+    const { puzzle } = await getKnownPair();
     const candidates: CandidatesGrid = get_candidates(puzzle);
     expect(candidates.length).toBe(9);
     candidates.forEach((row) => {
@@ -156,8 +156,8 @@ describe("get_candidates", () => {
     });
   });
 
-  test("pre-filled cells have a single-digit candidate array", () => {
-    const { puzzle } = getKnownPair();
+  test("pre-filled cells have a single-digit candidate array", async () => {
+    const { puzzle } = await getKnownPair();
     const candidates: CandidatesGrid = get_candidates(puzzle);
     puzzle.forEach((row, r) => {
       row.forEach((cell, c) => {
@@ -168,8 +168,8 @@ describe("get_candidates", () => {
     });
   });
 
-  test("candidate arrays contain only digits 1–9", () => {
-    const { puzzle } = getKnownPair();
+  test("candidate arrays contain only digits 1–9", async () => {
+    const { puzzle } = await getKnownPair();
     const candidates: CandidatesGrid = get_candidates(puzzle);
     candidates.flat(2).forEach((digit) => {
       expect(digit).toBeGreaterThanOrEqual(1);
@@ -192,8 +192,8 @@ describe("get_candidates", () => {
 // ---------------------------------------------------------------------------
 
 describe("validate_board", () => {
-  test("returns valid: true for a valid generated puzzle", () => {
-    const { puzzle } = getKnownPair();
+  test("returns valid: true for a valid generated puzzle", async () => {
+    const { puzzle } = await getKnownPair();
     const result: ValidationOutput = validate_board(puzzle);
     expect(result).toEqual({ valid: true });
   });
@@ -225,8 +225,8 @@ describe("validate_board", () => {
 // ---------------------------------------------------------------------------
 
 describe("print_board", () => {
-  test("does not throw for a Board", () => {
-    const { puzzle } = getKnownPair();
+  test("does not throw for a Board", async () => {
+    const { puzzle } = await getKnownPair();
     expect(() => print_board(puzzle)).not.toThrow();
   });
 

@@ -36,10 +36,10 @@ export const BLANK_BOARD: Board = stringToBoard(_sudoku.BLANK_BOARD);
  * const custom = generate(30, false); // 30 givens, may have many solutions
  * ```
  */
-export function generate(
+export async function generate(
   difficulty: Difficulty | number,
   unique?: boolean
-): Board {
+): Promise<Board> {
   return stringToBoard(_sudoku.generate(difficulty, unique));
 }
 
