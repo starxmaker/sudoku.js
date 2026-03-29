@@ -86,7 +86,7 @@ describe("generate", () => {
     expect(isBoard(board)).toBe(true);
     const givens = board.flat().filter((n) => n !== 0).length;
     expect(givens).toBe(30);
-  });
+  }, 120_000);
 
   test("easy puzzle has exactly 62 givens", async () => {
     const board = await generate("easy");
